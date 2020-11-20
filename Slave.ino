@@ -1,4 +1,4 @@
-//-----------------------------------------------------------------------------------------------------------//
+ //-----------------------------------------------------------------------------------------------------------//
 //                                                                                                           //
 //  Slave_ELEC1601_Student_2019_v3                                                                           //
 //  The Instructor version of this code is identical to this version EXCEPT it also sets PIN codes           //
@@ -36,7 +36,7 @@ Servo servoRight;
 // ### EDIT THE LINES BELOW TO MATCH YOUR SHIELD NUMBER AND CONNECTION PIN OPTION ###
 // ##################################################################################
 
-int shieldPairNumber = 17;
+int shieldPairNumber = 5;
 
 // CAUTION: If ConnStatusSupported = true you MUST NOT use pin A1 otherwise "random" reboots will occur
 // CAUTION: If ConnStatusSupported = true you MUST set the PIO[1] switch to A1 (not NC)
@@ -63,9 +63,8 @@ int rightVal = HIGH;
 
 // Need to store the moves we make so that we can complete the required automated replication 
 
-char moves[50];    // could there be over 50 moves necessary for the manual part of the course?
+char moves[100];
 int moveCounter = 0;  
-
 
 void setup()
 {
@@ -114,37 +113,54 @@ void loop()
 {
     char recvChar;
 
-    while(1)
-    {
+    while(1){
         if(blueToothSerial.available()){   // Check if there's any data sent from the remote Bluetooth shield
             recvChar = blueToothSerial.read();
             Serial.print(recvChar);
             if(recvChar == 'w'){
+              moves[moveCounter] = 'w';
+              moveCounter++;
               forward(50);
             }
             else if(recvChar == 'a'){
+              moves[moveCounter] = 'a';
+              moveCounter++;
               turnLeft(600);  
               forward(50);
             }
             else if(recvChar == 'd'){
-              turnRight(600); 
+              moves[moveCounter] = 'd';
+              moveCounter++;
+              turnRight(500); 
               forward(50);
             }
             else if(recvChar == 's'){
+              moves[moveCounter] = 's';
+              moveCounter++;
               backward(50);   
             }
 
-            // Shorter movements to finely adjust the robot's position when necessary
-            
-            else if(recvChar == 'i'){
-              forward(20);
+            // Automated Replication
+            else if(recvChar == 'm'){
+              for(int i = 0; i <= moveCounter; i++){
+                if(moves[i] == 'w'){
+                forward(1000);
+                }
+                if(moves[i] == 'a'){
+                  turnLeft(600);
+                  forward(1000);
+    
+                }
+                if(moves[i] == 'd'){
+                  turnRight(600); 
+                  forward(1000);
+                }
+                if(moves[i] == 's'){
+                  backward(1000);   
+                } 
             }
-            else if(recvChar == 'k'){
-              backward(20);   
-            }
+          }
 
-       
-            
             // Begin automatic maze navigation
             
             else if (recvChar == 'z') {
@@ -155,41 +171,46 @@ void loop()
                   
                   // Only Right free
                   if(leftVal == LOW && frontVal == LOW && rightVal == HIGH){
-                    backward(200); // Not sure how long to reverse or if we even need to go back if we adjust IR sensor so that it detects the wall 
-                    turnRight(600);
+                    backward(1000); // Not sure how long to reverse or if we even need to go back if we adjust IR sensor so that it detects the wall 
+                    turnRight(400);
                   }
                   
                   // Only Left free
                   else if(leftVal == HIGH && frontVal == LOW && rightVal == LOW){
-                    backward(200);
-                    turnLeft(600); 
+                    backward(1000);
+                    turnLeft(300); 
                   }
                   
                   // Both Left and Right free --> choose left turn
                   else if(leftVal == HIGH && frontVal == LOW && rightVal == HIGH){
-                    backward(200);
-                    turnLeft(600); 
+                    backward(1000);
+                    turnLeft(300); 
                   }
                   
                   //180 turn at deadend where the ball is 
                   else if(leftVal == LOW && frontVal == LOW && rightVal == LOW){
 
                     delay(5000); // 5 seconds to put ball on robot
-                   backward(200);
-                    turnLeft(1200);
+                    Serial.println("found ball");
+                    
+                   if(Serial.available()){
+                    recvChar  = "FOUND BALL!";
+                    Serial.print(recvChar);
+                    blueToothSerial.print(recvChar);
+                   }
+                    backward(1000);
+//                    turnLeft(1200);
                     //break;     // break out of the automatic navigation loop so that we can send a found message to master -> input 'z' again to begin robots return 
                      
                   }                   
                   else{
                     forward(50);
                   }   
-              }
-            
+                }
             }
-    }
+        }
 
-        if(Serial.available())            // Check if there's any data sent from the local serial terminal. You can add the other applications here.
-         {
+        if(Serial.available()){
           recvChar  = Serial.read();
           Serial.print(recvChar);
           blueToothSerial.print(recvChar);
@@ -250,9 +271,9 @@ void turnRight(int time)                     // Right turn function
 
 void backward(int time)                      // Backward function
 {
-  servoLeft.writeMicroseconds(1300);         // Left wheel clockwise
-  servoRight.writeMicroseconds(1700);        // Right wheel counterclockwise
-  //delay(time);                               // Maneuver for time ms
+  servoLeft.writeMicroseconds(1400);         // Left wheel clockwise
+  servoRight.writeMicroseconds(1600);        // Right wheel counterclockwise
+  delay(time);                               // Maneuver for time ms
 }
 
 void pivotForwardLeft(int time){
